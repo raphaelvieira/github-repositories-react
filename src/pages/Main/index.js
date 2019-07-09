@@ -11,6 +11,7 @@ export default class Main extends Component {
     newRepo: '',
     repositories: [],
     loading: false,
+    error: false,
   };
 
   // load localStorage data
@@ -37,23 +38,34 @@ export default class Main extends Component {
 
   handleSubmit = async e => {
     e.preventDefault();
-
-    this.setState({ loading: true });
     const { newRepo, repositories } = this.state;
-    const response = await api.get(`repos/${newRepo}`);
-    const data = {
-      name: response.data.full_name,
-    };
+    this.setState({ error: false, loading: true });
 
-    this.setState({
-      repositories: [...repositories, data],
-      newRepo: '',
-      loading: false,
-    });
+    try {
+      if (newRepo === '')
+        throw new Error('Você precisa indicar um repositório');
+
+      const hasRepo = repositories.find(r => r.name === newRepo);
+
+      if (hasRepo) throw new Error('Repositório duplicado');
+      const response = await api.get(`repos/${newRepo}`);
+      const data = {
+        name: response.data.full_name,
+      };
+
+      this.setState({
+        repositories: [...repositories, data],
+        newRepo: '',
+      });
+    } catch (error) {
+      this.setState({ error: true });
+    } finally {
+      this.setState({ loading: false });
+    }
   };
 
   render() {
-    const { newRepo, loading, repositories } = this.state;
+    const { newRepo, loading, repositories, error } = this.state;
 
     return (
       <Container>
@@ -62,7 +74,7 @@ export default class Main extends Component {
           Repositórios
         </h1>
 
-        <Form onSubmit={this.handleSubmit}>
+        <Form onSubmit={this.handleSubmit} error={error}>
           <input
             type="text"
             placeholder="Adicionar repositório"
