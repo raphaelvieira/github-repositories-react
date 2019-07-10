@@ -98,3 +98,24 @@ export const IssueList = styled.ul`
     }
   }
 `;
+
+export const Filter = styled.div`
+  width: 300px;
+  select {
+    width: 100px;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.4;
+    text-align: center;
+    max-width: 400px;
+  }
+
+  h1 {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.4;
+    text-align: center;
+    max-width: 400px;
+  }
+`;

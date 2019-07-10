@@ -2,8 +2,9 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import api from '../../services/api';
-import { Loading, Owner, IssueList } from './styles';
+import { Loading, Owner, IssueList, Filter } from './styles';
 import Container from '../../components/Container/index';
+import Pagination from '../../components/Pagination';
 
 export default class Repository extends Component {
   static propTypes = {
@@ -18,12 +19,38 @@ export default class Repository extends Component {
     repository: {},
     issues: [],
     loading: true,
+    page: 1,
+    filter: 'all',
   };
 
   async componentDidMount() {
+    this.loadRepository();
+  }
+
+  // save data to localStorage
+  componentDidUpdate(_, prevState) {
+    const { page } = this.state;
+
+    if (prevState.page !== page) {
+      this.loadRepository();
+    }
+  }
+
+  handlePageChange = button => {
+    const { page } = this.state;
+    const newPage = button === '+' ? page + 1 : page - 1;
+    this.setState({ page: newPage });
+  };
+
+  handleFilter = async e => {
+    await this.setState({ filter: e.target.value });
+    this.loadRepository();
+  };
+
+  async loadRepository() {
     const { match } = this.props;
     const repoName = decodeURIComponent(match.params.repository);
-
+    const { page, filter } = this.state;
     /**
      * execute 2 requests at the same time and wait for all responses */
     const [repository, issues] = await Promise.all([
@@ -31,7 +58,8 @@ export default class Repository extends Component {
       api.get(`/repos/${repoName}/issues`, {
         // query params
         params: {
-          state: 'open',
+          page,
+          state: filter,
           per_page: 5,
         },
       }),
@@ -44,7 +72,7 @@ export default class Repository extends Component {
   }
 
   render() {
-    const { repository, issues, loading } = this.state;
+    const { repository, issues, loading, page } = this.state;
 
     if (loading) {
       return <Loading>Carregando...</Loading>;
@@ -58,6 +86,20 @@ export default class Repository extends Component {
           <p>{repository.description}</p>
         </Owner>
 
+        <Filter>
+          <h1>Filter Status</h1>
+          <select onChange={this.handleFilter}>
+            <option id="all" value="all">
+              All
+            </option>
+            <option id="open" value="open">
+              Open
+            </option>
+            <option id="closed" value="closed">
+              Closed
+            </option>
+          </select>
+        </Filter>
         <IssueList>
           {issues.map(issue => (
             <li key={String(issue.id)}>
@@ -74,6 +116,7 @@ export default class Repository extends Component {
             </li>
           ))}
         </IssueList>
+        <Pagination page={page} changePage={this.handlePageChange} />
       </Container>
     );
   }
